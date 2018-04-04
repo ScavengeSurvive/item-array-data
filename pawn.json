@@ -1,12 +1,14 @@
 {
-    "user": "ScavengeSurvive",
-    "repo": "item-array-data",
-    "entry": "test.pwn",
-    "output": "test.amx",
-    "dependencies": [
-        "sampctl/samp-stdlib",
-        "Misiur/YSI",
-        "ScavengeSurvive/item"
-    ],
-    "dev_dependencies": ["ScavengeSurvive/test-boilerplate"]
+	"user": "ScavengeSurvive",
+	"repo": "item-array-data",
+	"entry": "test.pwn",
+	"output": "test.amx",
+	"dependencies": [
+		"sampctl/samp-stdlib",
+		"ScavengeSurvive/item",
+		"pawn-lang/YSI-Includes"
+	],
+	"dev_dependencies": [
+		"ScavengeSurvive/test-boilerplate"
+	]
 }
