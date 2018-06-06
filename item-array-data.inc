@@ -292,7 +292,7 @@ stock GetItemArrayDataAtCell(itemid, cell, &data) {
 		err("attempt to read item array data beyond data length",
 			_i("itemtype", _:itemtype),
 			_i("cell", cell),
-			_i("length", itm_arr_Length[item]));
+			_i("length", itm_arr_Length[itemid]));
 		return 3;
 	}
 	#endif
