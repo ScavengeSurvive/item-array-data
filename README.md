@@ -1,6 +1,7 @@
 # item-array-data
 
-Extends items to have an array of data instead of just one cell. Includes functions for setting, appending and getting array data.
+Extends items to have an array of data instead of just one cell. Includes
+functions for setting, appending and getting array data.
 
 ## Installation
 
@@ -18,7 +19,7 @@ Include in your code and begin using the library:
 
 ## Usage
 
-(todo: documentation)
+See source code comments for documentation.
 
 ## Testing
 

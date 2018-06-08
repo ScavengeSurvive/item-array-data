@@ -5,6 +5,8 @@
 	"output": "test.amx",
 	"dependencies": [
 		"sampctl/samp-stdlib",
+		"Southclaws/samp-logger",
+		"Southclaws/pawn-errors",
 		"ScavengeSurvive/item",
 		"pawn-lang/YSI-Includes"
 	],

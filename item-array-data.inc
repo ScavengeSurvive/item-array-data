@@ -11,6 +11,8 @@
 
 
 #include <a_samp>
+#include <logger>
+#include <errors>
 #include <item>
 #include <YSI\y_hooks>
 
@@ -19,107 +21,66 @@
 	#define ITM_ARR_MAX_ARRAY_DATA (256)
 #endif
 
-#if !defined ITM_ARR_ARRAY_SIZE_PROTECT
-	#define ITM_ARR_ARRAY_SIZE_PROTECT (true)
-#endif
-
 
 // Functions
 
 
+// SetItemTypeMaxArrayData sets the maximum size for array data for a specific
+// item type. This should be only called once, preferably immediately after
+// the item type has been defined. `protect` will mark items of this type as
+// "protected" meaning they require explicit actions to modify.
 forward SetItemTypeMaxArrayData(ItemType:itemtype, size, bool:protect = false);
-/*
-# Description:
--
-*/
 
-forward GetItemTypeArrayDataSize(ItemType:itemtype);
-/*
-# Description:
--
-*/
+// GetItemTypeArrayDataSize returns the array data size for a particular type.
+forward GetItemTypeArrayDataSize(ItemType:itemtype, &size);
 
-forward SetItemArrayData(itemid, data[], length, call = 1, bool:force = false);
-/*
-# Description:
--
-*/
+// SetItemArrayData is for setting the entire item array at once, the item's
+// array size will be resized automatically unless it is protected.
+forward Error:SetItemArrayData(Item:itemid, data[], length, call = 1, bool:force = false);
 
-forward GetItemArrayData(itemid, data[], length = sizeof data);
-/*
-# Description:
--
-*/
+// GetItemArrayData stores the entire array for an item in `data`.
+forward Error:GetItemArrayData(Item:itemid, data[], length = sizeof data);
 
-forward SetItemArrayDataAtCell(itemid, data, cell, autoadjustsize = 0, call = 1, bool:force = false);
-/*
-# Description:
--
-*/
+// SetItemArrayDataAtCell sets a single cell of an item's array data. `autosize`
+// adjust the array data automatically if `cell` specifies a cell index beyond
+// the current item's array size. `call` controls whether or not to call
+// `OnItemArrayDataChanged` and `force` is required for protected item types.
+forward Error:SetItemArrayDataAtCell(Item:itemid, data, cell, bool:autoSize = false, bool:call = true, bool:force = false);
 
-forward GetItemArrayDataAtCell(itemid, cell, &data);
-/*
-# Description:
--
-*/
+// GetItemArrayDataAtCell stores into `data` the data in the item's array at
+// `cell`.
+forward Error:GetItemArrayDataAtCell(Item:itemid, &data, cell);
 
-forward SetItemArrayDataSize(itemid, size, bool:force = false);
-/*
-# Description:
--
-*/
+// SetItemArrayDataSize adjusts the array size for an item. This size must be
+// within the item's max size for its type. `force` is required true for
+// protected item types.
+forward Error:SetItemArrayDataSize(Item:itemid, size, bool:force = false);
 
-forward GetItemArrayDataSize(itemid);
-/*
-# Description:
--
-*/
+// GetItemArrayDataSize stores into `size` the size of the item's array.
+forward GetItemArrayDataSize(Item:itemid, &size);
 
-forward GetItemTypeArrayDataMax(ItemType:itemtype);
-/*
-# Description:
--
-*/
+// AppendItemDataArray appends an entire array to an item's array.
+forward Error:AppendItemDataArray(Item:itemid, data[], length);
 
-forward AppendItemDataArray(itemid, data[], length);
-/*
-# Description:
--
-*/
+// AppendItemArrayCell appends a single cell to an item's array.
+forward Error:AppendItemArrayCell(Item:itemid, data);
 
-forward AppendItemArrayCell(itemid, data);
-/*
-# Description:
--
-*/
+// SetItemArrayDataLength explicitly sets the array size for an item.
+forward Error:SetItemArrayDataLength(Item:itemid, length, bool:force = false);
 
-forward SetItemArrayDataLength(itemid, length, bool:force = false);
-/*
-# Description:
--
-*/
+// RemoveItemArrayData clears all data for an item.
+forward RemoveItemArrayData(Item:itemid);
 
-forward RemoveItemArrayData(itemid);
-/*
-# Description:
--
-*/
+// SetItemNoResetArrayData will ensure an item's data is not reset on
+// `OnItemCreate`, this is useful if you want to set some array data when an
+// item is created but you have no control over when the `OnItemCreate` hook in
+// this library is called. If the hook in this library is called after your own
+// hook then using this function will ensure that array data is not zeroed
+// immediately after it has been set.
+forward SetItemNoResetArrayData(Item:itemid, bool:toggle);
 
-forward SetItemNoResetArrayData(itemid, bool:toggle);
-/*
-# Description:
--
-*/
-
-
-// Events
-
-
-forward OnItemArrayDataChanged(itemid);
-/*
-# Called:
--
-*/
+// OnItemArrayDataChanged is called whenever a function modifies an item's data.
+forward OnItemArrayDataChanged(Item:itemid);
 
 
 /*==============================================================================
@@ -137,7 +98,7 @@ static
 	itm_arr_NoResetOnCreate[MAX_ITEM];
 
 
-hook OnItemCreate(itemid) {
+hook OnItemCreate(Item:itemid) {
 	if(!itm_arr_NoResetOnCreate[itemid]) {
 		for(new i; i < itm_arr_ItemTypeArrayMax[GetItemType(itemid)]; i++) {
 			itm_arr_Data[itemid][i] = 0;
@@ -153,10 +114,16 @@ hook OnItemCreate(itemid) {
 
 stock SetItemTypeMaxArrayData(ItemType:itemtype, size, bool:protect = false) {
 	if(!IsValidItemType(itemtype)) {
+		err("attempt to set max array data for invalid item type",
+			_i("itemtype", _:itemtype));
 		return 1;
 	}
 
 	if(size > ITM_ARR_MAX_ARRAY_DATA) {
+		err("attempt to set max array data beyond hard limit",
+			_i("size", size),
+			_i("max", ITM_ARR_MAX_ARRAY_DATA),
+			_i("itemtype", _:itemtype));
 		return 2;
 	}
 
@@ -166,33 +133,28 @@ stock SetItemTypeMaxArrayData(ItemType:itemtype, size, bool:protect = false) {
 	return 0;
 }
 
-stock GetItemTypeArrayDataSize(ItemType:itemtype) {
+stock GetItemTypeArrayDataSize(ItemType:itemtype, &size) {
 	if(!IsValidItemType(itemtype)) {
-		return -1;
+		return 1;
 	}
 
-	return itm_arr_ItemTypeArrayMax[itemtype];
+	size = itm_arr_ItemTypeArrayMax[itemtype];
+	return 0;
 }
 
-stock SetItemArrayData(itemid, data[], length, call = 1, bool:force = false) {
+stock Error:SetItemArrayData(Item:itemid, data[], length, call = 1, bool:force = false) {
 	if(!IsValidItem(itemid)) {
-		return 0;
+		return Error(1, "invalid item id");
 	}
 
 	new ItemType:itemtype = GetItemType(itemid);
 
 	if(length > itm_arr_ItemTypeArrayMax[itemtype]) {
-		err("data length exceeds item type max data size.",
-			_i("itemtype", _:itemtype),
-			_i("length", length),
-			_i("maxLength", itm_arr_ItemTypeArrayMax[GetItemType(itemid)]));
-		return 1;
+		return Error(2, "length exceeds item type max data size");
 	}
 
 	if(itm_arr_ItemTypeArrayProtect[itemtype] && !force) {
-		err("itemtype (%d) uses data protection and force parameter is false.",
-			_i("itemtype", _:itemtype));
-		return 2;
+		return Error(3, "itemtype uses data protection, must force");
 	}
 
 	itm_arr_Length[itemid] = 0;
@@ -202,203 +164,166 @@ stock SetItemArrayData(itemid, data[], length, call = 1, bool:force = false) {
 	}
 
 	if(call) {
-		CallLocalFunction("OnItemArrayDataChanged", "d", itemid);
+		CallLocalFunction("OnItemArrayDataChanged", "d", _:itemid);
 	}
 
-	return 0;
+	return NoError();
 }
 
-stock GetItemArrayData(itemid, data[], length = sizeof data) {
+stock Error:GetItemArrayData(Item:itemid, data[], length = sizeof data) {
 	if(!IsValidItem(itemid)) {
-		return 1;
+		return Error(1, "invalid item id");
 	}
 
 	new ItemType:itemtype = GetItemType(itemid);
 
 	if(length != itm_arr_ItemTypeArrayMax[itemtype]) {
-		err("destination length does not match item type max length",
-			_i("itemtype", _:itemtype),
-			_i("length", length),
-			_i("max", itm_arr_ItemTypeArrayMax[itemtype]));
+		return Error(2, "destination length does not match item type max length");
 	}
 
-	for(new i; i < itm_arr_Length[itemid]; i++) {
+	for(new i; i < itm_arr_Length[itemid] && i < length; i++) {
 		data[i] = itm_arr_Data[itemid][i];
 	}
 
-	return 0;
+	return NoError();
 }
 
-stock SetItemArrayDataAtCell(itemid, data, cell, autoadjustsize = 0, call = 1, bool:force = false) {
+stock Error:SetItemArrayDataAtCell(Item:itemid, data, cell, bool:autoSize = false, bool:call = true, bool:force = false) {
 	if(!IsValidItem(itemid)) {
-		return 1;
+		return Error(1, "invalid item id");
 	}
 
 	new ItemType:itemtype = GetItemType(itemid);
 
 	if(cell >= itm_arr_ItemTypeArrayMax[itemtype]) {
-		err("attempt to write item array data beyond item type max",
-			_i("itemtype", _:itemtype),
-			_i("cell", cell),
-			_i("max", itm_arr_ItemTypeArrayMax[itemtype]));
-
-		return 2;
+		return Error(2, "attempt to write data beyond item type max");
 	}
 
 	if(itm_arr_ItemTypeArrayProtect[itemtype] && !force) {
-		err("itemtype uses data protection and force parameter is false",
-			_i("itemtype", _:itemtype));
-		return 3;
+		return Error(3, "itemtype uses data protection, must force");
 	}
 
 	if(cell >= itm_arr_Length[itemid]) {
-		if(autoadjustsize) {
+		if(autoSize) {
 			itm_arr_Length[itemid] = cell + 1;
 		} else {
-			#if ITM_ARR_ARRAY_SIZE_PROTECT == false
-				itm_arr_Length[itemid] = cell + 1;
-			#else
-				return 4;
-			#endif	
+			return Error(4, "attempt to write data beyond item array size");
 		}
 	}
 
 	itm_arr_Data[itemid][cell] = data;
 
 	if(call) {
-		CallLocalFunction("OnItemArrayDataChanged", "d", itemid);
+		CallLocalFunction("OnItemArrayDataChanged", "d", _:itemid);
 	}
 
-	return 0;
+	return NoError();
 }
 
-stock GetItemArrayDataAtCell(itemid, cell, &data) {
+stock Error:GetItemArrayDataAtCell(Item:itemid, &data, cell) {
 	if(!IsValidItem(itemid)) {
-		return 1;
+		return Error(1, "invalid item id");
 	}
 
 	new ItemType:itemtype = GetItemType(itemid);
 
 	if(cell >= itm_arr_ItemTypeArrayMax[itemtype]) {
-		err("attempt to read item array data beyond item type max",
-			_i("itemtype", _:itemtype),
-			_i("cell", cell),
-			_i("max", itm_arr_ItemTypeArrayMax[itemtype]));
-		return 2;
+		return Error(2, "attempt to read data beyond item type max");
 	}
 
-	#if ITM_ARR_ARRAY_SIZE_PROTECT == true
 	if(cell >= itm_arr_Length[itemid]) {
-		err("attempt to read item array data beyond data length",
-			_i("itemtype", _:itemtype),
-			_i("cell", cell),
-			_i("length", itm_arr_Length[itemtype]));
-		return 3;
+		return Error(3, "attempt to read data beyond data length");
 	}
-	#endif
 
 	data = itm_arr_Data[itemid][cell];
-	return 0;
+	return NoError();
 }
 
-stock SetItemArrayDataSize(itemid, size, bool:force = false) {
+stock Error:SetItemArrayDataSize(Item:itemid, size, bool:force = false) {
 	if(!IsValidItem(itemid)) {
-		return 1;
+		return Error(1, "invalid item id");
 	}
 
 	new ItemType:itemtype = GetItemType(itemid);
 
 	if(itm_arr_ItemTypeArrayProtect[itemtype] && !force) {
-		err("itemtype uses data protection and force parameter is false",
-			_i("itemtype", _:itemtype));
-		return 2;
+		return Error(2, "itemtype uses data protection, must force");
 	}
 
 	itm_arr_Length[itemid] = size;
 
-	return 0;
+	return NoError();
 }
 
-stock GetItemArrayDataSize(itemid) {
-	if(!IsValidItem(itemid)) {
-		return 0;
-	}
-
-	return itm_arr_Length[itemid];
-}
-
-stock GetItemTypeArrayDataMax(ItemType:itemtype) {
-	if(!IsValidItemType(itemtype)) {
-		return 0;
-	}
-
-	return itm_arr_ItemTypeArrayMax[itemtype];
-}
-
-stock AppendItemDataArray(itemid, data[], length) {
+stock GetItemArrayDataSize(Item:itemid, &size) {
 	if(!IsValidItem(itemid)) {
 		return 1;
 	}
 
+	size = itm_arr_Length[itemid];
+	return 0;
+}
+
+stock Error:AppendItemDataArray(Item:itemid, data[], length) {
+	if(!IsValidItem(itemid)) {
+		return Error(1, "invalid item id");
+	}
+
 	if(itm_arr_Length[itemid] + length > itm_arr_ItemTypeArrayMax[GetItemType(itemid)]) {
-		return 2;
+		return Error(2, "append out of bounds of item type max size");
 	}
 
 	for(new i; i < length; i++) {
 		itm_arr_Data[itemid][itm_arr_Length[itemid]++] = data[i];
 	}
 
-	return 0;
+	return NoError();
 }
 
-stock AppendItemArrayCell(itemid, data) {
+stock Error:AppendItemArrayCell(Item:itemid, data) {
 	if(!IsValidItem(itemid)) {
-		return 1;
+		return Error(1, "invalid item id");
 	}
 
 	if(itm_arr_Length[itemid] + 1 > itm_arr_ItemTypeArrayMax[GetItemType(itemid)]) {
-		return 2;
+		return Error(2, "append out of bounds of item type max size");
 	}
 
 	itm_arr_Data[itemid][itm_arr_Length[itemid]++] = data;
 
-	return 0;
+	return NoError();
 }
 
-stock SetItemArrayDataLength(itemid, length, bool:force = false) {
+stock Error:SetItemArrayDataLength(Item:itemid, length, bool:force = false) {
 	if(!IsValidItem(itemid)) {
-		return 1;
+		return Error(1, "invalid item id");
 	}
 
 	new ItemType:itemtype = GetItemType(itemid);
 
 	if(itm_arr_ItemTypeArrayProtect[itemtype] && !force) {
-		err("itemtype (%d) uses data protection and force parameter is false.",
-			_i("itemtype", _:itemtype));
-		return 2;
+		return Error(2, "itemtype uses data protection, must force");
 	}
 
 	itm_arr_Length[itemid] = length;
 
-	return 0;
+	return NoError();
 }
 
-stock RemoveItemArrayData(itemid) {
+stock RemoveItemArrayData(Item:itemid) {
 	if(!IsValidItem(itemid)) {
 		return 1;
 	}
 
 	itm_arr_Length[itemid] = 0;
-
 	return 0;
 }
 
-stock SetItemNoResetArrayData(itemid, bool:toggle) {
+stock SetItemNoResetArrayData(Item:itemid, bool:toggle) {
 	if(!IsValidItem(itemid)) {
 		return 1;
 	}
 
 	itm_arr_NoResetOnCreate[itemid] = toggle;
-
 	return 0;
 }
