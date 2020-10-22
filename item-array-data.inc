@@ -14,7 +14,7 @@
 #include <logger>
 #include <errors>
 #include <item>
-#include <YSI\y_hooks>
+#include <YSI_Coding\y_hooks>
 
 
 #if !defined ITM_ARR_MAX_ARRAY_DATA
@@ -36,7 +36,7 @@ forward GetItemTypeArrayDataSize(ItemType:itemtype, &size);
 
 // SetItemArrayData is for setting the entire item array at once, the item's
 // array size will be resized automatically unless it is protected.
-forward Error:SetItemArrayData(Item:itemid, data[], length, call = 1, bool:force = false);
+forward Error:SetItemArrayData(Item:itemid, const data[], length, call = 1, bool:force = false);
 
 // GetItemArrayData stores the entire array for an item in `data`.
 forward Error:GetItemArrayData(Item:itemid, data[], length = sizeof data);
@@ -60,7 +60,7 @@ forward Error:SetItemArrayDataSize(Item:itemid, size, bool:force = false);
 forward GetItemArrayDataSize(Item:itemid, &size);
 
 // AppendItemDataArray appends an entire array to an item's array.
-forward Error:AppendItemDataArray(Item:itemid, data[], length);
+forward Error:AppendItemDataArray(Item:itemid, const data[], length);
 
 // AppendItemArrayCell appends a single cell to an item's array.
 forward Error:AppendItemArrayCell(Item:itemid, data);
@@ -114,16 +114,16 @@ hook OnItemCreate(Item:itemid) {
 
 stock SetItemTypeMaxArrayData(ItemType:itemtype, size, bool:protect = false) {
 	if(!IsValidItemType(itemtype)) {
-		err("attempt to set max array data for invalid item type",
-			_i("itemtype", _:itemtype));
+		Logger_Err("attempt to set max array data for invalid item type",
+			Logger_I("itemtype", _:itemtype));
 		return 1;
 	}
 
 	if(size > ITM_ARR_MAX_ARRAY_DATA) {
-		err("attempt to set max array data beyond hard limit",
-			_i("size", size),
-			_i("max", ITM_ARR_MAX_ARRAY_DATA),
-			_i("itemtype", _:itemtype));
+		Logger_Err("attempt to set max array data beyond hard limit",
+			Logger_I("size", size),
+			Logger_I("max", ITM_ARR_MAX_ARRAY_DATA),
+			Logger_I("itemtype", _:itemtype));
 		return 2;
 	}
 
@@ -142,7 +142,7 @@ stock GetItemTypeArrayDataSize(ItemType:itemtype, &size) {
 	return 0;
 }
 
-stock Error:SetItemArrayData(Item:itemid, data[], length, call = 1, bool:force = false) {
+stock Error:SetItemArrayData(Item:itemid, const data[], length, call = 1, bool:force = false) {
 	if(!IsValidItem(itemid)) {
 		return Error(1, "invalid item id");
 	}
@@ -264,7 +264,7 @@ stock GetItemArrayDataSize(Item:itemid, &size) {
 	return 0;
 }
 
-stock Error:AppendItemDataArray(Item:itemid, data[], length) {
+stock Error:AppendItemDataArray(Item:itemid, const data[], length) {
 	if(!IsValidItem(itemid)) {
 		return Error(1, "invalid item id");
 	}
