@@ -177,8 +177,8 @@ stock Error:GetItemArrayData(Item:itemid, data[], length = sizeof data) {
 
 	new ItemType:itemtype = GetItemType(itemid);
 
-	if(length != itm_arr_ItemTypeArrayMax[itemtype]) {
-		return Error(2, "destination length does not match item type max length");
+	if(length > itm_arr_ItemTypeArrayMax[itemtype]) {
+		length = itm_arr_ItemTypeArrayMax[itemtype];
 	}
 
 	for(new i; i < itm_arr_Length[itemid] && i < length; i++) {
