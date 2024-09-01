@@ -167,7 +167,7 @@ stock Error:SetItemArrayData(Item:itemid, const data[], length, call = 1, bool:f
 		CallLocalFunction("OnItemArrayDataChanged", "d", _:itemid);
 	}
 
-	return NoError();
+	return Ok();
 }
 
 stock Error:GetItemArrayData(Item:itemid, data[], length = sizeof data) {
@@ -185,7 +185,7 @@ stock Error:GetItemArrayData(Item:itemid, data[], length = sizeof data) {
 		data[i] = itm_arr_Data[itemid][i];
 	}
 
-	return NoError();
+	return Ok();
 }
 
 stock Error:SetItemArrayDataAtCell(Item:itemid, data, cell, bool:autoSize = false, bool:call = true, bool:force = false) {
@@ -217,7 +217,7 @@ stock Error:SetItemArrayDataAtCell(Item:itemid, data, cell, bool:autoSize = fals
 		CallLocalFunction("OnItemArrayDataChanged", "d", _:itemid);
 	}
 
-	return NoError();
+	return Ok();
 }
 
 stock Error:GetItemArrayDataAtCell(Item:itemid, &data, cell) {
@@ -236,7 +236,7 @@ stock Error:GetItemArrayDataAtCell(Item:itemid, &data, cell) {
 	}
 
 	data = itm_arr_Data[itemid][cell];
-	return NoError();
+	return Ok();
 }
 
 stock Error:SetItemArrayDataSize(Item:itemid, size, bool:force = false) {
@@ -252,7 +252,7 @@ stock Error:SetItemArrayDataSize(Item:itemid, size, bool:force = false) {
 
 	itm_arr_Length[itemid] = size;
 
-	return NoError();
+	return Ok();
 }
 
 stock GetItemArrayDataSize(Item:itemid, &size) {
@@ -277,7 +277,7 @@ stock Error:AppendItemDataArray(Item:itemid, const data[], length) {
 		itm_arr_Data[itemid][itm_arr_Length[itemid]++] = data[i];
 	}
 
-	return NoError();
+	return Ok();
 }
 
 stock Error:AppendItemArrayCell(Item:itemid, data) {
@@ -291,7 +291,7 @@ stock Error:AppendItemArrayCell(Item:itemid, data) {
 
 	itm_arr_Data[itemid][itm_arr_Length[itemid]++] = data;
 
-	return NoError();
+	return Ok();
 }
 
 stock Error:SetItemArrayDataLength(Item:itemid, length, bool:force = false) {
@@ -307,7 +307,7 @@ stock Error:SetItemArrayDataLength(Item:itemid, length, bool:force = false) {
 
 	itm_arr_Length[itemid] = length;
 
-	return NoError();
+	return Ok();
 }
 
 stock RemoveItemArrayData(Item:itemid) {
